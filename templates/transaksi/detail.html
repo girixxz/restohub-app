@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Detail Transaksi - RestoHub{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="flex items-center mb-6">
+        <a href="{{ url_for('transaksi.riwayat') }}" class="text-gray-600 hover:text-gray-800 mr-4">
+            <i class="fas fa-arrow-left text-xl"></i>
+        </a>
+        <h1 class="text-3xl font-bold text-gray-900">Detail Transaksi</h1>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gray-50 px-6 py-4 border-b">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm text-gray-500">ID Transaksi</p>
+                    <p class="font-mono font-semibold">#{{ transaksi.id }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Waktu</p>
+                    <p class="font-semibold">{{ transaksi.waktu.strftime('%d %B %Y, %H:%M') }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Kasir</p>
+                    <p class="font-semibold">{{ transaksi.kasir.username }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Metode Pembayaran</p>
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full {% if transaksi.metode_pembayaran == 'cash' %}bg-green-100 text-green-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                        {{ transaksi.metode_pembayaran.upper() }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Items -->
+        <div class="px-6 py-4">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Item Pesanan</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="border-b">
+                            <th class="text-left py-2">Menu</th>
+                            <th class="text-right py-2">Harga</th>
+                            <th class="text-center py-2">Jumlah</th>
+                            <th class="text-right py-2">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detail in detail_list %}
+                        <tr class="border-b">
+                            <td class="py-3">
+                                <div>
+                                    <p class="font-medium">{{ detail.menu_item.nama }}</p>
+                                    <p class="text-sm text-gray-500">{{ detail.menu_item.kategori.title() }}</p>
+                                </div>
+                            </td>
+                            <td class="py-3 text-right">Rp {{ "{:,.0f}".format(detail.menu_item.harga) }}</td>
+                            <td class="py-3 text-center">{{ detail.jumlah }}</td>
+                            <td class="py-3 text-right font-medium">Rp {{ "{:,.0f}".format(detail.subtotal) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Total -->
+        <div class="bg-gray-50 px-6 py-4 border-t">
+            <div class="flex justify-between items-center">
+                <span class="text-lg font-semibold">Total Pembayaran:</span>
+                <span class="text-2xl font-bold text-primary">Rp {{ "{:,.0f}".format(transaksi.total_harga) }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

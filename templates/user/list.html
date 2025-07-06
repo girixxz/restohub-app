@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Manajemen Pengguna - RestoHub{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 flex items-center">
+                <i class="fas fa-users text-primary-500 mr-3"></i>
+                Manajemen Pengguna
+            </h1>
+            <p class="text-gray-600 mt-1 text-sm">Kelola akun pengguna dan hak akses mereka</p>
+        </div>
+        <a href="{{ url_for('user.add_user') }}" class="btn btn-primary">
+            <i class="fas fa-plus mr-2"></i> Tambah Pengguna
+        </a>
+    </div>
+
+    <!-- Users Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for user in users %}
+        <div class="card hover:shadow-md transition duration-300">
+            <div class="card-body">
+                <!-- Header -->
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold 
+                                    {% if user.role == 'admin' %} bg-purple-500 {% else %} bg-blue-500 {% endif %}">
+                            {{ user.username[0].upper() }}
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">{{ user.username }}</h3>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                {% if user.role == 'admin' %}
+                                    bg-purple-100 text-purple-800
+                                {% else %}
+                                    bg-blue-100 text-blue-800
+                                {% endif %}">
+                                <i class="mr-1 {% if user.role == 'admin' %}fas fa-crown{% else %}fas fa-cash-register{% endif %}"></i>
+                                {{ 'Admin' if user.role == 'admin' else 'Kasir' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold
+                        {% if user.is_active %} bg-green-100 text-green-800 {% else %} bg-gray-200 text-gray-500 {% endif %}">
+                        <span class="w-2 h-2 mr-1 rounded-full {% if user.is_active %} bg-green-500 {% else %} bg-gray-400 {% endif %}"></span>
+                        {{ "Aktif" if user.is_active else "Nonaktif" }}
+                    </span>
+                </div>
+
+                <!-- Info -->
+                <div class="text-sm text-gray-600 space-y-2 mb-4">
+                    <div><i class="fas fa-calendar-alt mr-2"></i> Dibuat: {{ user.created_at.strftime('%d %B %Y') }}</div>
+                    <div><i class="fas fa-key mr-2"></i> Hak Akses: {{ user.role.title() }}</div>
+                </div>
+
+                <!-- Actions -->
+                {% if user.id != current_user.id %}
+                <div class="flex justify-between items-center border-t pt-4">
+                    <div class="space-x-3">
+                        <a href="{{ url_for('user.edit_user', user_id=user.id) }}"
+                           class="text-primary-600 hover:text-primary-800 text-sm font-medium">
+                            <i class="fas fa-edit mr-1"></i> Edit
+                        </a>
+                        <button onclick="confirmDelete('{{ user.id }}', '{{ user.username }}')"
+                                class="text-red-600 hover:text-red-700 text-sm font-medium">
+                            <i class="fas fa-trash-alt mr-1"></i> Hapus
+                        </button>
+                    </div>
+                    <button onclick="toggleStatus('{{ user.id }}')" title="Ubah status aktif/nonaktif"
+                            class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-power-off"></i>
+                    </button>
+                </div>
+                {% else %}
+                <div class="text-xs text-gray-500 italic border-t pt-4">
+                    <i class="fas fa-info-circle mr-1"></i> Ini adalah akun kamu
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Tidak ada data -->
+    {% if not users %}
+    <div class="card">
+        <div class="card-body text-center py-12">
+            <i class="fas fa-users text-6xl text-gray-300 mb-4"></i>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Belum Ada Pengguna</h3>
+            <p class="text-gray-600 mb-6">Mulai dengan menambahkan pengguna pertama.</p>
+            <a href="{{ url_for('user.add_user') }}" class="btn btn-primary">
+                <i class="fas fa-plus mr-2"></i> Tambah Pengguna
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal Konfirmasi Hapus -->
+<div id="deleteModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center">
+    <div class="bg-white rounded-lg w-full max-w-sm mx-auto p-6 shadow-lg">
+        <div class="flex flex-col items-center text-center">
+            <div class="mb-4">
+                <i class="fas fa-exclamation-triangle text-red-500 text-4xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 mb-2">Hapus Pengguna</h3>
+            <p class="text-sm text-gray-600 mb-4">
+                Apakah kamu yakin ingin menghapus pengguna <span id="deleteUsername" class="font-semibold text-red-600"></span>?
+                Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <form id="deleteForm" method="POST" class="w-full flex justify-between">
+                <button type="button" onclick="closeDeleteModal()" class="btn btn-outline w-1/2 mr-2">Batal</button>
+                <button type="submit" class="btn btn-danger w-1/2">Hapus</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(userId, username) {
+    document.getElementById('deleteUsername').textContent = username;
+    document.getElementById('deleteForm').action = `/user/delete/${userId}`;
+    document.getElementById('deleteModal').classList.remove('hidden');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+}
+
+function toggleStatus(userId) {
+    fetch(`/user/toggle-status/${userId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    }).then(res => res.json())
+      .then(data => location.reload())
+      .catch(err => alert('Gagal mengubah status!'));
+}
+
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeDeleteModal();
+    }
+});
+</script>
+{% endblock %}

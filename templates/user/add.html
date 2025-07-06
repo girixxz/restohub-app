@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Tambah Pengguna - RestoHub{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-10">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center mb-4">
+            <a href="{{ url_for('user.list_users') }}" class="text-gray-600 hover:text-gray-800 mr-4">
+                <i class="fas fa-arrow-left text-xl"></i>
+            </a>
+            <h1 class="text-3xl font-bold text-gray-900">Tambah Pengguna Baru</h1>
+        </div>
+        <p class="text-gray-600 text-sm">Buat akun baru untuk digunakan dalam sistem RestoHub</p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-white shadow-md rounded-lg p-6 space-y-6">
+        <form method="POST" class="space-y-6">
+            <!-- Input Fields -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700 mb-1">
+                        Username <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="username" name="username" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                           placeholder="Masukkan username (min 3 karakter)">
+                </div>
+
+                <div>
+                    <label for="role" class="block text-sm font-medium text-gray-700 mb-1">
+                        Role <span class="text-red-500">*</span>
+                    </label>
+                    <select id="role" name="role" required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="">-- Pilih Role --</option>
+                        <option value="admin">👑 Administrator</option>
+                        <option value="kasir">💼 Kasir</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
+                    Password <span class="text-red-500">*</span>
+                </label>
+                <input type="password" id="password" name="password" required
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                       placeholder="Minimal 6 karakter">
+            </div>
+
+            <!-- Role Permissions Info -->
+            <div class="bg-blue-50 p-4 rounded-md border border-blue-200">
+                <h4 class="font-semibold text-gray-800 mb-2">Hak Akses Role:</h4>
+                <ul class="space-y-2 text-sm text-gray-700">
+                    <li class="flex items-start">
+                        <span class="text-purple-600 mr-2 mt-1">
+                            <i class="fas fa-crown"></i>
+                        </span>
+                        <div>
+                            <strong>Administrator:</strong> Akses penuh sistem, kelola pengguna, lihat seluruh laporan, kelola menu.
+                        </div>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-blue-600 mr-2 mt-1">
+                            <i class="fas fa-cash-register"></i>
+                        </span>
+                        <div>
+                            <strong>Kasir:</strong> Proses transaksi, kelola shift sendiri, lihat riwayat transaksi pribadi.
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-between pt-4 border-t border-gray-200">
+                <a href="{{ url_for('user.list_users') }}"
+                   class="text-sm px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition">
+                    <i class="fas fa-times mr-1"></i> Batal
+                </a>
+                <button type="submit"
+                        class="text-sm px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center">
+                    <i class="fas fa-save mr-2"></i> Buat Pengguna
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

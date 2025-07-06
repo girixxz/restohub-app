@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Kelola Menu - RestoHub{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 flex items-center">
+                <i class="fas fa-utensils text-primary-500 mr-3"></i>
+                Kelola Menu
+            </h1>
+            <p class="text-gray-600 mt-1">Kelola item menu restoran dan ketersediaan</p>
+        </div>
+        {% if current_user.is_admin() %}
+        <a href="{{ url_for('menu.add_menu') }}" class="btn btn-primary">
+            <i class="fas fa-plus mr-2"></i>Tambah Item Baru
+        </a>
+        {% endif %}
+    </div>
+    
+    <!-- Filter Section -->
+    <div class="bg-white rounded-xl shadow-lg border-2 border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b-2 border-gray-200 bg-gray-50">
+            <h3 class="font-semibold text-gray-900">🔍 Filter Menu</h3>
+        </div>
+        <div class="p-6">
+            <div class="flex items-center space-x-4">
+                <label class="text-sm font-medium text-gray-700">Kategori:</label>
+                <select id="kategori-filter" class="select w-48 border-2 border-gray-300">
+                    <option value="">Semua Kategori</option>
+                    <option value="makanan" {% if kategori_filter == 'makanan' %}selected{% endif %}>🍽️ Makanan</option>
+                    <option value="minuman" {% if kategori_filter == 'minuman' %}selected{% endif %}>🥤 Minuman</option>
+                    <option value="snack" {% if kategori_filter == 'snack' %}selected{% endif %}>🍿 Snack</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Menu Grid -->
+    {% if menu_items %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for item in menu_items %}
+        <div class="bg-white rounded-xl shadow-lg border-2 border-gray-200 hover:shadow-xl transition-all duration-200 overflow-hidden">
+            <div class="p-6">
+                <!-- Menu Header -->
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ item.nama }}</h3>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {% if item.kategori == 'makanan' %}bg-red-100 text-red-800 border-red-200{% elif item.kategori == 'minuman' %}bg-blue-100 text-blue-800 border-blue-200{% else %}bg-yellow-100 text-yellow-800 border-yellow-200{% endif %}">
+                            {% if item.kategori == 'makanan' %}🍽️ Makanan{% elif item.kategori == 'minuman' %}🥤 Minuman{% else %}🍿 Snack{% endif %}
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Price & Availability -->
+                <div class="space-y-3 mb-4">
+                    <div class="flex items-center justify-between py-2 border-t-2 border-gray-100">
+                        <span class="text-sm text-gray-600">Harga:</span>
+                        <span class="text-xl font-bold text-primary-600">Rp {{ "{:,.0f}".format(item.harga) }}</span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between py-2 border-t-2 border-gray-100">
+                        <span class="text-sm text-gray-600">Status:</span>
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border {% if item.tersedia %}bg-green-100 text-green-800 border-green-200{% else %}bg-red-100 text-red-800 border-red-200{% endif %}">
+                            <div class="w-1.5 h-1.5 {% if item.tersedia %}bg-green-400{% else %}bg-red-400{% endif %} rounded-full mr-1.5"></div>
+                            {% if item.tersedia %}Tersedia{% else %}Tidak Tersedia{% endif %}
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="flex items-center justify-between pt-4 border-t-2 border-gray-200">
+                    {% if current_user.is_admin() %}
+                    <div class="flex space-x-3">
+                        <a href="{{ url_for('menu.edit_menu', menu_id=item.id) }}" 
+                           class="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                            <i class="fas fa-edit mr-1"></i>Edit
+                        </a>
+                        <button onclick="confirmDelete('{{ item.id }}', '{{ item.nama }}')" 
+                                class="text-red-600 hover:text-red-700 text-sm font-medium">
+                            <i class="fas fa-trash mr-1"></i>Hapus
+                        </button>
+                    </div>
+                    {% endif %}
+                    
+                    <button onclick="toggleAvailability('{{ item.id }}')" 
+                            class="btn {% if item.tersedia %}btn-warning{% else %}btn-success{% endif %} text-xs px-3 py-1 border-2">
+                        {% if item.tersedia %}
+                        <i class="fas fa-eye-slash mr-1"></i>Sembunyikan
+                        {% else %}
+                        <i class="fas fa-eye mr-1"></i>Tampilkan
+                        {% endif %}
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-white rounded-xl shadow-lg border-2 border-gray-200 overflow-hidden">
+        <div class="p-12 text-center">
+            <i class="fas fa-utensils text-6xl text-gray-300 mb-4"></i>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Tidak Ada Item Menu</h3>
+            <p class="text-gray-600 mb-6">
+                {% if kategori_filter %}
+                    Tidak ada item dalam kategori ini
+                {% else %}
+                    Mulai dengan menambahkan item menu pertama
+                {% endif %}
+            </p>
+            {% if current_user.is_admin() %}
+            <a href="{{ url_for('menu.add_menu') }}" class="btn btn-primary">
+                <i class="fas fa-plus mr-2"></i>Tambah Item Menu
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border-2 border-gray-300 w-96 shadow-lg rounded-lg bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4 border-2 border-red-200">
+                <i class="fas fa-exclamation-triangle text-red-600"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Hapus Item Menu</h3>
+            <p class="text-sm text-gray-500 mb-4">
+                Yakin ingin menghapus <span id="deleteItemName" class="font-semibold"></span>? 
+                Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <div class="flex justify-center space-x-3">
+                <button onclick="closeDeleteModal()" class="btn btn-outline">Batal</button>
+                <form id="deleteForm" method="POST" class="inline">
+                    <button type="submit" class="btn btn-danger">Hapus Item</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Filter kategori
+document.getElementById('kategori-filter').addEventListener('change', function() {
+    const kategori = this.value;
+    const url = new URL(window.location);
+    if (kategori) {
+        url.searchParams.set('kategori', kategori);
+    } else {
+        url.searchParams.delete('kategori');
+    }
+    window.location = url;
+});
+
+// Toggle availability
+function toggleAvailability(menuId) {
+    fetch(`/menu/toggle-availability/${menuId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan');
+    });
+}
+
+// Delete confirmation
+function confirmDelete(itemId, itemName) {
+    document.getElementById('deleteItemName').textContent = itemName;
+    document.getElementById('deleteForm').action = `/menu/delete/${itemId}`;
+    document.getElementById('deleteModal').classList.remove('hidden');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+}
+
+// Close modal when clicking outside
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeDeleteModal();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Riwayat Transaksi - RestoHub{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">
+                {% if current_user.is_admin() %}📊 Laporan Transaksi{% else %}📋 Riwayat Saya{% endif %}
+            </h1>
+            <p class="text-gray-600 text-sm">
+                {% if current_user.is_admin() %}Kelola dan analisis semua transaksi{% else %}Lihat riwayat transaksi Anda{% endif %}
+            </p>
+        </div>
+        {% if current_user.is_kasir() %}
+        <a href="{{ url_for('transaksi.new_transaksi') }}" class="btn btn-primary">
+            <i class="fas fa-plus mr-2"></i>Transaksi Baru
+        </a>
+        {% endif %}
+    </div>
+    
+    {% if current_user.is_admin() %}
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="text-3xl font-bold text-primary">{{ summary.total_transaksi }}</div>
+                <div class="text-sm text-gray-600">Total Transaksi</div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="text-3xl font-bold text-success">Rp {{ "{:,.0f}".format(summary.total_pendapatan) }}</div>
+                <div class="text-sm text-gray-600">Total Pendapatan</div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="text-3xl font-bold text-warning">Rp {{ "{:,.0f}".format(summary.rata_rata) }}</div>
+                <div class="text-sm text-gray-600">Rata-rata per Transaksi</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filter & Actions -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="font-semibold text-gray-900">🔍 Filter & Export</h3>
+        </div>
+        <div class="card-body">
+            <!-- Filter Form -->
+            <form method="GET" action="{{ url_for('transaksi.riwayat') }}" class="mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
+                        <input type="date" name="tanggal" value="{{ selected_tanggal or '' }}" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Kasir</label>
+                        <select name="kasir" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm">
+                            <option value="">Semua Kasir</option>
+                            {% for kasir in kasir_list %}
+                            <option value="{{ kasir.id }}" {% if selected_kasir == kasir.id|string %}selected{% endif %}>
+                                {{ kasir.username }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" class="btn btn-primary w-full">
+                            <i class="fas fa-search mr-2"></i>Filter
+                        </button>
+                    </div>
+                    <div class="flex items-end">
+                        <a href="{{ url_for('transaksi.riwayat') }}" class="btn btn-secondary w-full">
+                            <i class="fas fa-times mr-2"></i>Reset
+                        </a>
+                    </div>
+                </div>
+            </form>
+            
+            <!-- Download -->
+            <div class="border-t pt-4">
+                <form method="GET" action="{{ url_for('transaksi.download_csv') }}" class="flex items-center justify-between">
+                    <input type="hidden" name="tanggal" value="{{ selected_tanggal or '' }}">
+                    <input type="hidden" name="kasir" value="{{ selected_kasir or '' }}">
+                    <span class="text-sm text-gray-600">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Export data sesuai filter aktif
+                    </span>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-download mr-2"></i>Download CSV
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Transactions Table -->
+    {% if transaksi_data %}
+    <div class="card">
+        <div class="card-header">
+            <div class="flex justify-between items-center">
+                <h3 class="font-semibold text-gray-900">📋 Daftar Transaksi</h3>
+                <span class="text-sm text-gray-600">{{ transaksi_data|length }} transaksi</span>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Waktu</th>
+                        {% if current_user.is_admin() %}
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kasir</th>
+                        {% endif %}
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Metode</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for data in transaksi_data %}
+                    {% set transaksi = data.transaksi %}
+                    {% set detail_items = data.detail_items %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm">
+                            <div class="font-medium text-gray-900">{{ transaksi.waktu.strftime('%d/%m') }}</div>
+                            <div class="text-gray-500 text-xs">{{ transaksi.waktu.strftime('%H:%M') }}</div>
+                        </td>
+                        {% if current_user.is_admin() %}
+                        <td class="px-4 py-3 text-sm">
+                            <div class="flex items-center">
+                                <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-2">
+                                    <i class="fas fa-user text-blue-600 text-xs"></i>
+                                </div>
+                                <span class="font-medium">{{ transaksi.kasir.username }}</span>
+                            </div>
+                        </td>
+                        {% endif %}
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 text-xs font-medium rounded-full {% if transaksi.metode_pembayaran == 'cash' %}bg-green-100 text-green-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                                {% if transaksi.metode_pembayaran == 'cash' %}💵 CASH{% else %}📱 QRIS{% endif %}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            <div class="max-w-xs">
+                                {% for detail in detail_items %}
+                                    <span class="inline-block bg-gray-100 rounded px-2 py-1 text-xs mr-1 mb-1">
+                                        {{ detail.menu_item.nama }} x{{ detail.jumlah }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="font-bold text-success">
+                                Rp {{ "{:,.0f}".format(transaksi.total_harga) }}
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <a href="{{ url_for('transaksi.detail_transaksi', transaksi_id=transaksi.id) }}" 
+                               class="text-primary hover:text-blue-600 font-medium text-sm">
+                                <i class="fas fa-eye mr-1"></i>Detail
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-12">
+            <i class="fas fa-receipt text-6xl text-gray-300 mb-4"></i>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                {% if selected_tanggal or selected_kasir %}
+                    Tidak ada transaksi
+                {% else %}
+                    Belum ada transaksi
+                {% endif %}
+            </h3>
+            <p class="text-gray-500 mb-4">
+                {% if selected_tanggal or selected_kasir %}
+                    Coba ubah filter atau reset
+                {% else %}
+                    Transaksi akan muncul di sini
+                {% endif %}
+            </p>
+            {% if current_user.is_kasir() %}
+            <a href="{{ url_for('transaksi.new_transaksi') }}" class="btn btn-primary">
+                <i class="fas fa-plus mr-2"></i>Buat Transaksi
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
