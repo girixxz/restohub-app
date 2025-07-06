@@ -1,8 +1,8 @@
 Flask==2.3.3
+gunicorn
+python-dotenv
 Flask-Login==0.6.3
 mongoengine==0.27.0
 bcrypt==4.0.1
 pymongo==4.5.0
 dnspython==2.4.2
-python-dotenv==1.0.1
-gunicorn
