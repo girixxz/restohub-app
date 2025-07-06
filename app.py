@@ -17,7 +17,12 @@ def create_app():
     app.config.from_object(Config)
 
     try:
-        connect(host=Config.MONGODB_URI)
+        connect(
+            db="restohub",
+            host=Config.MONGODB_URI,
+            tls=True,
+            tlsAllowInvalidCertificates=True  # jika masih error TLS
+        )
         print("✅ Connected to MongoDB Atlas!")
     except Exception as e:
         print(f"❌ Failed to connect to MongoDB: {e}")
